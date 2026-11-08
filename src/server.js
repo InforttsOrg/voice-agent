@@ -95,7 +95,28 @@ app.post('/api/calling/inbound', callingController.handleInboundCall);
 app.post('/api/calling/process-speech', callingController.processSpeechTurn);
 app.post('/api/calling/outbound-dispatch', callingController.triggerOutboundLeadCall);
 
-// 4. Memory Management Endpoints
+// 4. Client Gateway Authorization & License Enforcement
+app.post('/api/gateway/auth', (req, res) => {
+  const apiKey = req.headers['x-api-key'] || req.body.apiKey;
+  const validKey = process.env.VOICE_API_KEY || '27DuRfGq7V7RNQk0bzen26CvmbiGCNJIvGzvwH4I';
+
+  if (!apiKey || apiKey !== validKey) {
+    return res.status(401).json({
+      success: false,
+      error: { message: 'Unauthorized: Invalid or missing Infortts Voice License Key', code: 'UNAUTHORIZED' }
+    });
+  }
+
+  res.json({
+    success: true,
+    message: 'Authorized Gateway Client',
+    tenant: 'infortts-client-prod',
+    tier: 'enterprise-voice',
+    validUntil: '2027-12-31T23:59:59Z'
+  });
+});
+
+// 5. Memory Management Endpoints
 app.get('/api/memory', callingController.getSessionMemory);
 app.post('/api/memory/reset', callingController.resetSessionMemory);
 
