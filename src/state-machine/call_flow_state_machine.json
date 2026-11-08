@@ -1,0 +1,59 @@
+{
+  "stateMachine": "growthhikes_voice_agent_v1",
+  "initialState": "GREETING",
+  "states": {
+    "GREETING": {
+      "promptKey": "greeting",
+      "expectedInputs": ["DRONE", "MARKETING", "SOFTWARE", "PRICING", "OTHER"],
+      "transitions": {
+        "DRONE": "DRONE_QUALIFICATION",
+        "MARKETING": "MARKETING_QUALIFICATION",
+        "SOFTWARE": "SOFTWARE_QUALIFICATION",
+        "PRICING": "PRICING_OVERVIEW",
+        "OTHER": "SCHEDULE_MEETING"
+      }
+    },
+    "DRONE_QUALIFICATION": {
+      "promptKey": "drone_questions",
+      "extract": ["location", "dates", "fps_requirements", "fpv_needed"],
+      "transitions": {
+        "COMPLETE": "SCHEDULE_MEETING",
+        "PRICING_INQUIRY": "PRICING_OVERVIEW"
+      }
+    },
+    "MARKETING_QUALIFICATION": {
+      "promptKey": "marketing_questions",
+      "extract": ["instagram_handle", "gmb_location", "monthly_budget"],
+      "transitions": {
+        "COMPLETE": "SCHEDULE_MEETING"
+      }
+    },
+    "SOFTWARE_QUALIFICATION": {
+      "promptKey": "software_questions",
+      "extract": ["platform", "target_users", "launch_timeline"],
+      "transitions": {
+        "COMPLETE": "SCHEDULE_MEETING"
+      }
+    },
+    "PRICING_OVERVIEW": {
+      "promptKey": "pricing_ranges",
+      "transitions": {
+        "SEND_WHATSAPP_ESTIMATE": "CONFIRM_AND_CLOSE",
+        "SCHEDULE_CALL": "SCHEDULE_MEETING"
+      }
+    },
+    "SCHEDULE_MEETING": {
+      "promptKey": "propose_timeslot",
+      "calendarSync": true,
+      "transitions": {
+        "ACCEPTED": "CONFIRM_AND_CLOSE",
+        "RESCHEDULE": "SCHEDULE_MEETING"
+      }
+    },
+    "CONFIRM_AND_CLOSE": {
+      "promptKey": "goodbye",
+      "actions": ["SEND_CALENDAR_INVITE", "SEND_WHATSAPP_SMS_SUMMARY", "TAG_CRM_HOT_LEAD"],
+      "isTerminal": true
+    }
+  }
+}

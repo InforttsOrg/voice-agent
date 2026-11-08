@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infortts Voice Agent // Test Workbench &amp; Telemetry</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #111827;
+      --border: #1f2937;
+      --accent: #00f0ff;
+      --accent-glow: rgba(0, 240, 255, 0.25);
+      --green: #10b981;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .logo-badge {
+      background: var(--accent);
+      color: #000;
+      font-weight: 900;
+      font-size: 0.85rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      letter-spacing: 1px;
+    }
+    h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.5px; }
+    
+    .nav-tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .tab-btn.active {
+      background: rgba(0, 240, 255, 0.1);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .tab-btn:hover:not(.active) {
+      color: var(--text);
+      background: #1f2937;
+    }
+
+    .tab-content { display: none; flex-direction: column; gap: 1.5rem; }
+    .tab-content.active { display: flex; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .card-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .status-pill {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+    }
+    .pulse-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+
+    .conversation-log {
+      background: #060911;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem;
+      min-height: 240px;
+      max-height: 360px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+    .bubble {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      max-width: 85%;
+      word-break: break-word;
+    }
+    .bubble-user {
+      align-self: flex-end;
+      background: #1e3a8a;
+      border: 1px solid #3b82f6;
+      color: #eff6ff;
+    }
+    .bubble-agent {
+      align-self: flex-start;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f8fafc;
+    }
+    .bubble-meta {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+      font-family: var(--font-mono);
+    }
+
+    .waveform-canvas {
+      width: 100%;
+      height: 60px;
+      background: #060911;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .input-text {
+      flex: 1;
+      min-width: 240px;
+      background: #060911;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+    .input-text:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 0.75rem 1.25rem;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+    .btn:hover {
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+    .btn-stop {
+      background: var(--red);
+      color: #fff;
+    }
+    .btn-secondary {
+      background: #1f2937;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      background: #374151;
+    }
+
+    .badge-chip {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: var(--accent);
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .badge-chip:hover {
+      background: #334155;
+    }
+
+    pre.code-block {
+      background: #060911;
+      border: 1px solid var(--border);
+      padding: 1rem;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: #a7f3d0;
+      overflow-x: auto;
+    }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    table.data-table th, table.data-table td {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      text-align: left;
+    }
+    table.data-table th {
+      background: #1e293b;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <span class="logo-badge">INFORTTS</span>
+        <h1>Autonomous Voice Agent Telemetry &amp; Workbench</h1>
+      </div>
+      <div>
+        <span class="status-pill" style="background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid var(--green);">
+          <span class="pulse-dot"></span> BACKEND LIVE
+        </span>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('tab-voice')">🎙️ Interactive Voice Call</button>
+      <button class="tab-btn" onclick="switchTab('tab-memory')">🧠 Memory &amp; Intent Inspector</button>
+      <button class="tab-btn" onclick="switchTab('tab-sip')">📞 Linphone &amp; SIP Setup</button>
+      <button class="tab-btn" onclick="switchTab('tab-diag')">⚡ Health &amp; Diagnostics</button>
+    </div>
+
+    <!-- TAB 1: Interactive Voice Call -->
+    <div id="tab-voice" class="tab-content active">
+      <div class="card">
+        <div class="card-title">
+          <span style="color: var(--accent);">Direct Voice Call (Phone / Browser Mic)</span>
+          <span id="callStateLabel" style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">IDLE</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">
+          Tap <strong>"Start Voice Call (Mic)"</strong> and speak naturally in Hindi, Hinglish, Punjabi, or English. The agent recognizes your speech and speaks back in your ear.
+        </p>
+
+        <!-- Audio Waveform Visualizer -->
+        <canvas id="waveform" class="waveform-canvas"></canvas>
+
+        <div class="conversation-log" id="voiceChatLog">
+          <div class="bubble bubble-agent">
+            <strong>Agent:</strong> Hello! Thank you for calling Infortts &amp; GrowthHikes. Namaste! I am your AI assistant. Aap English ya Hindi me baat kar sakte hain. How can I help you today with our marketing, drone shoots, or software services?
+            <div class="bubble-meta">Initial Greeting // Polly.Aditi // Barge-in Active</div>
+          </div>
+        </div>
+
+        <div class="input-row">
+          <button class="btn" id="callToggleBtn" onclick="toggleVoiceCall()">
+            <span id="callIcon">📞</span> <span id="callBtnText">Start Voice Call (Mic)</span>
+          </button>
+          <input type="text" class="input-text" id="quickSpeechInput" placeholder="Or type a test message and hit Enter..." onkeydown="if(event.key==='Enter') sendQuickSpeech()">
+          <button class="btn btn-secondary" onclick="sendQuickSpeech()">Send</button>
+        </div>
+
+        <!-- Quick Dialect Chips -->
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-top: 0.25rem;">
+          <span style="font-size: 0.75rem; color: var(--text-muted);">Quick Cues:</span>
+          <span class="badge-chip" onclick="simulateSpeech('Mujhe Delhi me drone shoot karwana hai')">Hindi: Drone Shoot</span>
+          <span class="badge-chip" onclick="simulateSpeech('Kitna pricing hoga monthly retainer ka?')">Hindi: Pricing</span>
+          <span class="badge-chip" onclick="simulateSpeech('We need a mobile app for our business')">English: Software</span>
+          <span class="badge-chip" onclick="simulateSpeech('Sat Sri Akal ji! FPV shoot karwana hai')">Punjabi: FPV</span>
+          <span class="badge-chip" onclick="simulateSpeech('Haan bilkul WhatsApp pe bhej do')">Confirmation</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: Memory & Intent Inspector -->
+    <div id="tab-memory" class="tab-content">
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">
+            <span>Active Session State</span>
+            <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="resetMemory()">Reset Memory</button>
+          </div>
+          <table class="data-table" id="memoryTable">
+            <tr><th>Attribute</th><th>Current Value</th></tr>
+            <tr><td>Session ID</td><td id="memSessionId">default</td></tr>
+            <tr><td>Lifecycle State</td><td><span class="status-pill" style="background: rgba(0,240,255,0.15); color: var(--accent);" id="memState">GREETING</span></td></tr>
+            <tr><td>Detected Language</td><td id="memLang">en</td></tr>
+            <tr><td>Service Interest</td><td id="memService">None</td></tr>
+            <tr><td>Location Extracted</td><td id="memLocation">None</td></tr>
+            <tr><td>Pricing Requested</td><td id="memPricing">No</td></tr>
+            <tr><td>Lead Confirmed</td><td id="memConfirmed">No</td></tr>
+            <tr><td>Turn Count</td><td id="memTurnCount">0</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Raw Context &amp; Memory JSON</span>
+            <span class="status-pill" style="background: #1e293b; color: #a7f3d0;">JSON</span>
+          </div>
+          <pre class="code-block" id="rawMemoryJson">// Live state will appear here after turns</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Linphone SIP Setup -->
+    <div id="tab-sip" class="tab-content">
+      <div class="card">
+        <div class="card-title">
+          <span style="color: var(--accent);">Linphone Android SIP Architecture</span>
+          <span class="status-pill" style="background: rgba(16, 185, 129, 0.15); color: var(--green);">SIP READY</span>
+        </div>
+        <p style="font-size: 0.9rem; line-height: 1.5;">
+          Your Linphone client on Android connects directly to the cloud SIP proxy and Render backend over encrypted TLS and WebSocket (WSS).
+        </p>
+        <table class="data-table">
+          <tr><th>Parameter</th><th>Value</th><th>Status</th></tr>
+          <tr><td>Your Linphone SIP URI</td><td><code>sip:infortts@sip.linphone.org</code></td><td>Registered</td></tr>
+          <tr><td>SIP Proxy / Registrar</td><td><code>sip:sip.linphone.org</code></td><td>Active</td></tr>
+          <tr><td>Render Backend Host</td><td><code>growthhikes-voice-agent.onrender.com</code></td><td>Online</td></tr>
+          <tr><td>SIP WebSocket Bridge</td><td><code>wss://growthhikes-voice-agent.onrender.com/ws/sip</code></td><td>Listening</td></tr>
+          <tr><td>Supported Audio Codecs</td><td>Opus, PCMU (G.711u), PCMA (G.711a)</td><td>Supported</td></tr>
+          <tr><td>Audio Encryption</td><td>SRTP / TLS Transport</td><td>Enabled</td></tr>
+        </table>
+        
+        <div style="background: #060911; padding: 1rem; border-radius: 6px; border: 1px solid var(--border); font-size: 0.85rem;">
+          <strong style="color: var(--accent);">To place a SIP Call from your phone:</strong>
+          <ol style="margin-left: 1.5rem; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.35rem;">
+            <li>Open the <strong>Linphone</strong> app on your Android phone.</li>
+            <li>In the search/dialer bar at the top, type: <code>sip:infortts@sip.linphone.org</code> or the web test session.</li>
+            <li>Tap the green Call icon to initiate high-definition Opus audio.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: Health & Diagnostics -->
+    <div id="tab-diag" class="tab-content">
+      <div class="card">
+        <div class="card-title">
+          <span>Backend Ping &amp; Live Telemetry</span>
+          <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="fetchHealth()">Refresh</button>
+        </div>
+        <div class="grid" style="margin-top: 0.5rem;">
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">HTTP STATUS</div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: var(--green);" id="httpStatus">-</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">LATENCY</div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent);" id="latencyVal">-</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">UPTIME</div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: #fff;" id="uptimeVal">-</div>
+          </div>
+        </div>
+        <pre class="code-block" id="healthJson" style="margin-top: 0.5rem;">// Click refresh to probe health</pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tab Switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+      if (tabId === 'tab-memory') refreshMemory();
+      if (tabId === 'tab-diag') fetchHealth();
+    }
+
+    // Speech & Audio Engine
+    let isCalling = false;
+    let recognition = null;
+    let audioCtx = null;
+    let analyser = null;
+    let animId = null;
+    const synth = window.speechSynthesis;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.lang = 'en-IN';
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[event.results.length - 1][0].transcript;
+        handleUserTurn(transcript);
+      };
+      recognition.onerror = (e) => {
+        console.warn('Speech error:', e.error);
+        if (e.error === 'not-allowed') {
+          alert('Microphone permission is required for voice calls.');
+        }
+      };
+    }
+
+    function initWaveform() {
+      const canvas = document.getElementById('waveform');
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+
+      function draw() {
+        animId = requestAnimationFrame(draw);
+        ctx.fillStyle = '#060911';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = isCalling ? '#00f0ff' : '#1f2937';
+        ctx.beginPath();
+
+        const sliceWidth = canvas.width / 50;
+        let x = 0;
+
+        for (let i = 0; i < 50; i++) {
+          const v = isCalling ? (Math.sin(Date.now() / 150 + i * 0.4) * 15 + canvas.height / 2) : canvas.height / 2;
+          if (i === 0) ctx.moveTo(x, v);
+          else ctx.lineTo(x, v);
+          x += sliceWidth;
+        }
+        ctx.stroke();
+      }
+      draw();
+    }
+    initWaveform();
+
+    function toggleVoiceCall() {
+      const btn = document.getElementById('callToggleBtn');
+      const text = document.getElementById('callBtnText');
+      const icon = document.getElementById('callIcon');
+      const label = document.getElementById('callStateLabel');
+
+      if (!isCalling) {
+        isCalling = true;
+        btn.classList.add('btn-stop');
+        text.innerText = 'End Voice Call';
+        icon.innerText = '🔴';
+        label.innerText = 'CONNECTED // LISTENING';
+        label.style.color = '#10b981';
+
+        speak("Hello! Thank you for calling Infortts and GrowthHikes. Namaste! I am your AI assistant. How can I help you today?");
+
+        if (recognition) {
+          try { recognition.start(); } catch(e){}
+        }
+      } else {
+        isCalling = false;
+        btn.classList.remove('btn-stop');
+        text.innerText = 'Start Voice Call (Mic)';
+        icon.innerText = '📞';
+        label.innerText = 'IDLE';
+        label.style.color = '#9ca3af';
+
+        if (recognition) recognition.stop();
+        if (synth) synth.cancel();
+      }
+    }
+
+    async function sendQuickSpeech() {
+      const input = document.getElementById('quickSpeechInput');
+      const val = input.value.trim();
+      if (!val) return;
+      input.value = '';
+      await handleUserTurn(val);
+    }
+
+    async function simulateSpeech(text) {
+      await handleUserTurn(text);
+    }
+
+    async function handleUserTurn(text) {
+      appendBubble('user', text);
+
+      try {
+        const res = await fetch('/api/calling/process-speech', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ SpeechResult: text, sessionId: 'default' })
+        });
+
+        const json = await res.json();
+        const data = json.data;
+        const replyText = data ? data.reply : "Thank you for the update.";
+
+        appendBubble('agent', replyText, `${data?.detectedLanguage?.toUpperCase()} // ${data?.intent}`);
+        speak(replyText);
+        refreshMemory();
+      } catch (err) {
+        appendBubble('agent', 'Error processing speech turn: ' + err.message);
+      }
+    }
+
+    function appendBubble(role, text, meta) {
+      const log = document.getElementById('voiceChatLog');
+      const div = document.createElement('div');
+      div.className = 'bubble bubble-' + role;
+      div.innerHTML = '<strong>' + (role === 'user' ? 'You' : 'Agent') + ':</strong> ' + text;
+      if (meta) {
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'bubble-meta';
+        metaDiv.innerText = meta;
+        div.appendChild(metaDiv);
+      }
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function speak(text) {
+      if (!synth) return;
+      synth.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 1.0;
+      utter.pitch = 1.0;
+      synth.speak(utter);
+    }
+
+    // Memory Inspector
+    async function refreshMemory() {
+      try {
+        const res = await fetch('/api/memory?sessionId=default');
+        const json = await res.json();
+        const data = json.data;
+
+        document.getElementById('memSessionId').innerText = data.id || 'default';
+        document.getElementById('memState').innerText = data.state || 'GREETING';
+        document.getElementById('memLang').innerText = data.detectedLanguage || 'en';
+        document.getElementById('memService').innerText = data.entities?.service || 'None';
+        document.getElementById('memLocation').innerText = data.entities?.location || 'None';
+        document.getElementById('memPricing').innerText = data.entities?.pricingRequested ? 'Yes' : 'No';
+        document.getElementById('memConfirmed').innerText = data.entities?.confirmed ? 'Yes' : 'No';
+        document.getElementById('memTurnCount').innerText = data.turns ? data.turns.length : 0;
+
+        document.getElementById('rawMemoryJson').innerText = JSON.stringify(data, null, 2);
+      } catch (e) {
+        console.warn('Memory refresh failed:', e);
+      }
+    }
+
+    async function resetMemory() {
+      try {
+        await fetch('/api/memory/reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: 'default' })
+        });
+        refreshMemory();
+      } catch (e) {
+        alert('Failed to reset memory: ' + e.message);
+      }
+    }
+
+    // Health Diagnostics
+    async function fetchHealth() {
+      const start = performance.now();
+      try {
+        const res = await fetch('/health');
+        const end = performance.now();
+        const json = await res.json();
+
+        document.getElementById('httpStatus').innerText = '200 OK';
+        document.getElementById('latencyVal').innerText = Math.round(end - start) + ' ms';
+        document.getElementById('uptimeVal').innerText = json.uptime + ' s';
+        document.getElementById('healthJson').innerText = JSON.stringify(json, null, 2);
+      } catch (e) {
+        document.getElementById('httpStatus').innerText = 'ERROR';
+        document.getElementById('httpStatus').style.color = '#ef4444';
+        document.getElementById('healthJson').innerText = 'Probe failed: ' + e.message;
+      }
+    }
+  </script>
+</body>
+</html>
