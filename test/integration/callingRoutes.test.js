@@ -46,13 +46,13 @@ describe('Calling Controller Integration Tests', () => {
   });
 
   describe('processSpeechTurn', () => {
-    it('should parse speech transcript and return contextual speech turn TwiML', () => {
+    it('should parse speech transcript and return contextual speech turn TwiML', async () => {
       const req = {
         body: { SpeechResult: 'I am interested in drone cinematography shoots' },
       };
       const res = createMockResponse();
 
-      callingController.processSpeechTurn(req, res);
+      await callingController.processSpeechTurn(req, res);
 
       assert.strictEqual(res.statusCode, 200);
       assert.strictEqual(res.headers['content-type'], 'text/xml');
@@ -61,14 +61,14 @@ describe('Calling Controller Integration Tests', () => {
       assert.ok(res.body.includes('<Gather input="speech"'));
     });
 
-    it('should return JSON structured response with memory for json clients', () => {
+    it('should return JSON structured response with memory for json clients', async () => {
       const req = {
         headers: { accept: 'application/json' },
         body: { SpeechResult: 'Drone shoot chahiye Delhi me', sessionId: 'test-session-1' },
       };
       const res = createMockResponse();
 
-      callingController.processSpeechTurn(req, res);
+      await callingController.processSpeechTurn(req, res);
 
       assert.strictEqual(res.statusCode, 200);
       assert.strictEqual(res.body.success, true);

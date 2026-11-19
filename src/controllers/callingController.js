@@ -9,12 +9,12 @@ exports.handleInboundCall = (req, res) => {
   res.send(twiml);
 };
 
-exports.processSpeechTurn = (req, res) => {
+exports.processSpeechTurn = async (req, res) => {
   const speechResult = req.body.SpeechResult || req.body.transcript || req.body.text || '';
   const sessionId = req.body.sessionId || req.body.CallSid || 'default';
   console.log(`[Voice Speech] [Session: ${sessionId}] User said: "${speechResult}"`);
 
-  const outcome = voiceCallingService.processVoiceTurn(speechResult, sessionId);
+  const outcome = await voiceCallingService.processVoiceTurn(speechResult, sessionId);
 
   // Return TwiML XML if requested or from Twilio, otherwise JSON for web test bench
   const isJsonClient = (req.headers && req.headers.accept && req.headers.accept.includes('application/json')) || (typeof req.is === 'function' && req.is('json'));

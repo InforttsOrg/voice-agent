@@ -62,6 +62,18 @@ describe('VoiceCallingService Unit Tests', () => {
       assert.ok(outcome.reply.includes('WhatsApp'));
     });
 
+    it('should identify Marketing and Reels intent and reply in English/Hindi', () => {
+      const outcome = voiceCallingService.processVoiceTurn('We need Instagram Reels marketing and SEO for our startup');
+      assert.strictEqual(outcome.intent, 'MARKETING_INQUIRY');
+      assert.ok(outcome.reply.includes('Reels'));
+    });
+
+    it('should identify custom software development intent', () => {
+      const outcome = voiceCallingService.processVoiceTurn('I want to build a Flutter mobile app and Next.js website');
+      assert.strictEqual(outcome.intent, 'SOFTWARE_DEV');
+      assert.ok(outcome.reply.includes('Next.js') || outcome.reply.includes('Flutter'));
+    });
+
     it('should identify affirmative confirmation and close gracefully', () => {
       const outcome = voiceCallingService.processVoiceTurn('Haanji WhatsApp par bhej do');
       assert.strictEqual(outcome.intent, 'CONFIRMATION');

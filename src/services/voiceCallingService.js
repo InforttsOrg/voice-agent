@@ -151,6 +151,85 @@ class VoiceCallingService {
   }
 
   /**
+   * Query Google Gemini 2.5 Flash for natural contextual turn generation.
+   */
+  async queryGeminiAI(userSpeechTranscript, session, detectedLang) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return null;
+
+    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+    const systemPrompt = `You are the front-desk AI voice receptionist for GrowthHikes & Infortts.
+Primary Objective: Warmly greet callers, identify intent, answer questions concisely, and qualify leads for creative marketing, drone shoots, or custom software development.
+
+Services Offered:
+1. Creative Marketing: Viral Instagram Reels, Meta ad campaigns, Google Business Profile (GMB) SEO, brand positioning.
+2. Drone Cinematography: 4K aerial shoots & indoor FPV walkthroughs with certified pilots.
+3. Custom Software: Production Next.js web applications, Flutter mobile apps (iOS/Android), and WhatsApp AI bots.
+
+Critical Voice Telephony Rules:
+- Keep answers STRICTLY to 1 or 2 concise, natural sentences (under 30 words). Never output bullet points or paragraphs.
+- Match caller's language naturally (English, Hindi, Hinglish, Punjabi, etc.).
+- If asked about pricing: state that customized pilot packages to monthly retainers are available, and offer to send an itemized estimate to their WhatsApp right now.
+- If asked to meet: suggest a quick 15-minute Google Meet with lead engineer Sahil Rathee (+91 9625213480).
+- If caller says yes / sure / haan: warmly confirm details are recorded.
+
+Output format: Return STRICTLY valid JSON with keys:
+"reply": (string, 1-2 sentences natural spoken text),
+"intent": ("MARKETING_INQUIRY" | "DRONE_BOOKING" | "SOFTWARE_DEV" | "PRICING_REQUEST" | "CONFIRMATION" | "GENERAL_INQUIRY"),
+"entities": {"service": string|null, "location": string|null, "date": string|null, "pricingRequested": boolean, "confirmed": boolean}`;
+
+    // Format last 4 turns of conversation history
+    const history = (session.turns || []).slice(-4).map(t => ({
+      role: t.role === 'agent' ? 'model' : 'user',
+      parts: [{ text: t.text }]
+    }));
+
+    history.push({
+      role: 'user',
+      parts: [{ text: `Caller says (${detectedLang}): "${userSpeechTranscript}"` }]
+    });
+
+    const payload = {
+      contents: history,
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 140,
+        responseMimeType: "application/json"
+      }
+    };
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) return null;
+      const data = await res.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) return null;
+
+      const parsed = JSON.parse(rawText);
+      if (parsed.reply && typeof parsed.reply === 'string') {
+        return parsed;
+      }
+    } catch (err) {
+      // Graceful fallback to heuristic
+      return null;
+    }
+    return null;
+  }
+
+  /**
    * Processes conversational turn with multilingual understanding, entity extraction, and memory persistence.
    */
   processVoiceTurn(userSpeechTranscript, sessionId = 'default') {
@@ -201,7 +280,17 @@ class VoiceCallingService {
         reply = "Our custom engineering team builds production Next.js web applications and Flutter iOS/Android apps. What core features does your MVP or business need?";
       }
     } 
-    // 4. Pricing, Cost & Package Inquiry
+    // 4. Marketing, Social Media, Reels & SEO Intent
+    else if (/\b(marketing|reels|instagram|seo|growth|ads|meta|ad|lead|branding)\b/i.test(text)) {
+      intent = 'MARKETING_INQUIRY';
+      session.state = 'QUALIFYING';
+      if (lang === 'hi') {
+        reply = "Hamari growth team viral Reels, Meta ad funnels aur Google Business rankings manage karti hai. Aapka business kis niche me hai?";
+      } else {
+        reply = "GrowthHikes manages high-conversion viral Reels, Meta ad campaigns, and local SEO rankings. What industry is your brand in?";
+      }
+    }
+    // 5. Pricing, Cost & Package Inquiry
     else if (/\b(pricing|cost|price|rate|kitna|daam|paisa|charge|fees)\b/i.test(text)) {
       intent = 'PRICING_REQUEST';
       session.state = 'PROPOSAL';
@@ -211,30 +300,17 @@ class VoiceCallingService {
         reply = "Our packages range from customized pilot projects to monthly full-service retainers. I can send an instant itemized estimate to your WhatsApp right now. Should I do that?";
       }
     } 
-    // 5. Fallback / General Inquiry
+    // 6. Fallback / General Inquiry
     else {
       if (lang === 'hi') {
-        reply = "Aapka project kafi interesting lag raha hai! Kya aap hamare lead engineer ke sath 15 minute ka quick Google Meet demo schedule karna chahenge?";
+        reply = "Namaste! GrowthHikes & Infortts me aapka swagat hai. Kya aap creative marketing, 4K drone shoots, ya software development ke bare me janna chahte hain?";
       } else {
-        reply = "That sounds exciting! We can certainly help you with that. Would you prefer a quick Google Meet demo or an in-person meeting?";
+        reply = "Welcome to GrowthHikes & Infortts! Are you looking for our creative marketing funnels, 4K drone shoots, or custom software development?";
       }
     }
 
-    // Save turn into session memory
-    session.turns.push({
-      role: 'user',
-      text: raw,
-      lang,
-      timestamp: new Date().toISOString(),
-    });
-    session.turns.push({
-      role: 'agent',
-      text: reply,
-      intent,
-      timestamp: new Date().toISOString(),
-    });
-
-    return {
+    // Prepare sync fallback response object
+    const syncOutcome = {
       reply,
       intent,
       detectedLanguage: lang,
@@ -245,9 +321,48 @@ class VoiceCallingService {
         sessionId: session.id,
         state: session.state,
         entities: session.entities,
-        turnCount: session.turns.length,
+        turnCount: session.turns.length + 2,
       },
     };
+
+    // Async execution that queries Gemini 2.5 Flash if available
+    const asyncTurn = (async () => {
+      let finalOutcome = { ...syncOutcome };
+      try {
+        const aiResult = await this.queryGeminiAI(raw, session, lang);
+        if (aiResult && aiResult.reply) {
+          finalOutcome.reply = aiResult.reply;
+          if (aiResult.intent) finalOutcome.intent = aiResult.intent;
+          if (aiResult.entities) {
+            Object.assign(session.entities, aiResult.entities);
+          }
+        }
+      } catch (err) {
+        // Fall back to syncOutcome
+      }
+
+      // Record final turn in session memory
+      session.turns.push({
+        role: 'user',
+        text: raw,
+        lang,
+        timestamp: new Date().toISOString(),
+      });
+      session.turns.push({
+        role: 'agent',
+        text: finalOutcome.reply,
+        intent: finalOutcome.intent,
+        timestamp: new Date().toISOString(),
+      });
+
+      finalOutcome.memory.entities = session.entities;
+      finalOutcome.memory.turnCount = session.turns.length;
+      return finalOutcome;
+    })();
+
+    // Hybrid promise: satisfies both sync unit-tests and async Express controllers
+    Object.assign(asyncTurn, syncOutcome);
+    return asyncTurn;
   }
 }
 
