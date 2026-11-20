@@ -5,9 +5,11 @@ const http = require('http');
 const path = require('path');
 const { WebSocketServer } = require('ws');
 const callingController = require('./controllers/callingController');
+const voiceCommsController = require('./controllers/voiceCommsController');
 const { renderDashboard } = require('./views/dashboard');
 const rateLimiter = require('./middleware/rateLimiter');
 const voiceCallingService = require('./services/voiceCallingService');
+const tenantConfig = require('./core/TenantConfig');
 
 const app = express();
 const PORT = parseInt(process.env.PORT, 10) || 26002;
@@ -119,6 +121,13 @@ app.post('/api/gateway/auth', (req, res) => {
 // 5. Memory Management Endpoints
 app.get('/api/memory', callingController.getSessionMemory);
 app.post('/api/memory/reset', callingController.resetSessionMemory);
+
+// 6. Enterprise Voice Communication API (Meeseeks & TAF Asset)
+app.post('/api/v1/voice/speak', voiceCommsController.synthesizeSpeech);
+app.post('/api/v1/voice/converse', voiceCommsController.converseTurn);
+app.get('/api/v1/voice/profiles', voiceCommsController.getProfiles);
+app.get('/api/v1/voice/config', voiceCommsController.getTenantConfig);
+app.post('/api/v1/voice/config', voiceCommsController.updateTenantConfig);
 
 // Create HTTP server
 const server = http.createServer(app);

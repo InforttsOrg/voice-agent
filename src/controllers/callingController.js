@@ -21,9 +21,9 @@ exports.processSpeechTurn = async (req, res) => {
 
   const responseTwiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Say voice="Polly.Aditi">${outcome.reply}</Say>
+    <Say voice="${outcome.voice || 'Polly.Aditi'}">${outcome.ssml || outcome.reply}</Say>
     <Gather input="speech" action="/api/calling/process-speech" method="POST" speechTimeout="auto" timeout="3">
-        <Say voice="Polly.Aditi">What date or time works best for you?</Say>
+        <Say voice="${outcome.voice || 'Polly.Aditi'}">What date or time works best for you?</Say>
     </Gather>
 </Response>`;
 
@@ -32,9 +32,13 @@ exports.processSpeechTurn = async (req, res) => {
       success: true,
       data: {
         reply: outcome.reply,
+        humanizedReply: outcome.humanizedReply || outcome.reply,
         intent: outcome.intent,
         detectedLanguage: outcome.detectedLanguage,
+        callerEmotion: outcome.callerEmotion,
+        vocalState: outcome.vocalState,
         voice: outcome.voice,
+        ssml: outcome.ssml,
         memory: outcome.memory,
         twiml: responseTwiml,
       },

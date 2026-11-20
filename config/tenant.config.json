@@ -1,0 +1,72 @@
+{
+  "tenantId": "infortts-growthhikes",
+  "brand": {
+    "name": "GrowthHikes & Infortts",
+    "shortName": "GrowthHikes",
+    "tagline": "AI Growth Engineering & Autonomous Voice Operations",
+    "contact": {
+      "phone": "+91 9625213480",
+      "email": "sahil.artits.rathee@gmail.com",
+      "whatsapp": "+919625213480",
+      "website": "https://artits.infortts.site"
+    }
+  },
+  "persona": {
+    "agentName": "Aria",
+    "role": "Senior Growth & Solutions Consultant",
+    "gender": "female",
+    "defaultLanguage": "en",
+    "supportedLanguages": ["en", "hi", "pa", "ta", "te", "mr"],
+    "voiceProfile": "warm_consultative",
+    "humanRealism": {
+      "enableDisfluencies": true,
+      "enableBreathingPauses": true,
+      "enableEmotionAdaptation": true,
+      "fillerFrequency": 0.4
+    }
+  },
+  "providers": {
+    "primaryTTS": "twilio_neural",
+    "ttsVoices": {
+      "en-IN": "Polly.Aditi",
+      "hi-IN": "Polly.Kajal",
+      "en-US": "Polly.Joanna"
+    },
+    "elevenlabs": {
+      "voiceId": "21m00Tcm4TlvDq8ikWAM",
+      "modelId": "eleven_multilingual_v2"
+    },
+    "sarvam": {
+      "model": "bulbul:v1",
+      "languageCode": "hi-IN"
+    }
+  },
+  "servicesCatalog": [
+    {
+      "id": "DRONE_CINEMATOGRAPHY",
+      "name": "4K Aerial & Indoor FPV Cinematography",
+      "keywords": ["drone", "fpv", "shoot", "camera", "aerial", "cinematography", "walkthrough"],
+      "shortDescription": "4K aerial coverage and dynamic indoor FPV walkthroughs with certified DGCA-compliant pilots",
+      "startingPrice": "₹15,000 / shoot"
+    },
+    {
+      "id": "CREATIVE_MARKETING",
+      "name": "High-Conversion Growth Marketing & Meta Ads",
+      "keywords": ["marketing", "reels", "instagram", "seo", "growth", "ads", "meta", "ad", "lead", "branding"],
+      "shortDescription": "Viral Instagram Reels production, high-ROI Meta ad funnels, and Google Business Profile SEO ranking",
+      "startingPrice": "₹25,000 / month"
+    },
+    {
+      "id": "SOFTWARE_DEVELOPMENT",
+      "name": "Custom Full-Stack Engineering & AI Systems",
+      "keywords": ["website", "app", "apps", "application", "software", "flutter", "react", "portal", "code", "ai", "bot"],
+      "shortDescription": "Production Next.js web applications, Flutter cross-platform mobile apps, and autonomous WhatsApp AI agents",
+      "startingPrice": "₹45,000 / MVP"
+    }
+  ],
+  "webhooks": {
+    "crmWebhookUrl": "",
+    "leadNotificationWebhookUrl": "",
+    "eventStreamUrl": ""
+  }
+}

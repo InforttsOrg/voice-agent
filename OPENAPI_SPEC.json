@@ -1,0 +1,200 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Infortts Autonomous Voice Agent Commercial API",
+    "version": "2.0.0",
+    "description": "Production-grade, human-indistinguishable autonomous conversational voice AI engine with dynamic vocal emotion inflection, regional Indic & English dialect support, barge-in detection, and white-label multi-tenant architecture. Commercial IP asset for TAF distribution.",
+    "contact": {
+      "name": "Sahil Rathee",
+      "email": "sahil.artits.rathee@gmail.com",
+      "url": "https://artits.infortts.site"
+    },
+    "license": {
+      "name": "Commercial Enterprise Asset Purchase License",
+      "url": "https://artits.infortts.site/license"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://growthhikes-voice-agent.onrender.com",
+      "description": "Production Cloud Service (Render)"
+    },
+    {
+      "url": "http://127.0.0.1:26002",
+      "description": "Local Edge Daemon"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health and Telemetry Probe",
+        "description": "Returns live service status, uptime, Twilio and SIP bridge states, and memory metrics.",
+        "responses": {
+          "200": {
+            "description": "System operational status"
+          }
+        }
+      }
+    },
+    "/api/v1/voice/speak": {
+      "post": {
+        "summary": "Synthesize Emotional Speech",
+        "description": "Converts arbitrary text into expressive speech using Neural SSML, ElevenLabs, or Sarvam AI Bulbul with dynamic emotion prosody, pauses, and fillers.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["text"],
+                "properties": {
+                  "text": { "type": "string", "example": "Welcome to autonomous operations. All systems are nominal." },
+                  "lang": { "type": "string", "enum": ["en", "hi", "pa", "ta", "te", "mr"], "default": "en" },
+                  "vocalState": {
+                    "type": "string",
+                    "enum": ["warm_consultative", "energetic_enthusiastic", "reassuring_empathetic", "crisp_efficient", "celebratory_closing"],
+                    "default": "warm_consultative"
+                  },
+                  "provider": { "type": "string", "enum": ["twilio_neural", "elevenlabs", "sarvam", "web_audio"], "default": "twilio_neural" },
+                  "voice": { "type": "string", "example": "Polly.Aditi" },
+                  "disfluencies": { "type": "boolean", "default": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Synthesized speech payload with SSML and audio stream" }
+        }
+      }
+    },
+    "/api/v1/voice/converse": {
+      "post": {
+        "summary": "Full Conversational Dialogue Turn",
+        "description": "Accepts user speech or transcript, analyzes emotional sentiment, executes LLM generation via Gemini 2.5 Flash, updates session memory, and returns emotional response.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["text"],
+                "properties": {
+                  "text": { "type": "string", "example": "Mujhe 4K drone shoot chahiye Delhi me next Friday" },
+                  "sessionId": { "type": "string", "default": "default" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Conversational turn result with emotional vocal attributes" }
+        }
+      }
+    },
+    "/api/v1/voice/profiles": {
+      "get": {
+        "summary": "List Vocal Emotion Profiles",
+        "description": "Lists all five calibrated emotional vocal states with pitch, rate, volume, and conversational filler dictionaries.",
+        "responses": {
+          "200": { "description": "List of vocal emotion profiles" }
+        }
+      }
+    },
+    "/api/v1/voice/config": {
+      "get": {
+        "summary": "Get White-Label Configuration",
+        "description": "Retrieves the active tenant branding, services catalog, contact details, and voice routing preferences.",
+        "responses": {
+          "200": { "description": "Active tenant configuration" }
+        }
+      },
+      "post": {
+        "summary": "Update White-Label Configuration",
+        "description": "Updates white-label tenant branding, service catalog, and webhooks.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": {
+          "200": { "description": "Configuration updated successfully" }
+        }
+      }
+    },
+    "/api/calling/inbound": {
+      "post": {
+        "summary": "Twilio / SIP Inbound Call Webhook",
+        "description": "Answers inbound telephony call with TwiML greeting, barge-in speech gather, and bilingual routing.",
+        "responses": {
+          "200": { "content": { "text/xml": {} } }
+        }
+      }
+    },
+    "/api/calling/process-speech": {
+      "post": {
+        "summary": "Twilio Speech Result Webhook",
+        "description": "Processes caller speech transcription turn from Twilio Gather, returns next TwiML turn or JSON.",
+        "responses": {
+          "200": { "content": { "text/xml": {}, "application/json": {} } }
+        }
+      }
+    },
+    "/api/calling/outbound-dispatch": {
+      "post": {
+        "summary": "Trigger Outbound AI Lead Call",
+        "description": "Dispatches autonomous outbound qualification call to a verified phone number.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["phone"],
+                "properties": {
+                  "phone": { "type": "string", "example": "+919992396866" },
+                  "name": { "type": "string", "example": "Sahil" },
+                  "serviceCategory": { "type": "string", "example": "software" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Outbound call dispatched" }
+        }
+      }
+    },
+    "/api/memory": {
+      "get": {
+        "summary": "Inspect Session Memory",
+        "description": "Returns full session state, extracted entities, language, and turn history for a session ID.",
+        "parameters": [
+          { "name": "sessionId", "in": "query", "required": false, "schema": { "type": "string", "default": "default" } }
+        ],
+        "responses": {
+          "200": { "description": "Session memory object" }
+        }
+      }
+    },
+    "/api/memory/reset": {
+      "post": {
+        "summary": "Reset Session Memory",
+        "description": "Purges memory for a session ID and reinitializes fresh greeting state.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "sessionId": { "type": "string", "default": "default" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Session memory reset" }
+        }
+      }
+    }
+  }
+}
